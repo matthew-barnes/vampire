@@ -48,6 +48,8 @@ CUDA_CFLAGS= -O3 -I./hdr -DCUDA $(CUDA_ARCH) --use_fast_math -ftz=true -std=c++1
 $(CUDA_OBJECTS): obj/%.o: src/%.cu
 	$(NVCC) $< -c -o $@ $(CUDA_CFLAGS) $(CUDA_PR) -DCUDA_MATRIX=$(CUDA_MATRIX_TYPE)
 
+MPI_OBJECTS=$(OBJECTS:.o=_mpi.o)
+
 # Target to link the CUDA enabled vampire
 ifeq ($(shell uname -s), Darwin)
 cuda: GCC_CFLAGS=$(LLVM_CFLAGS)
@@ -57,6 +59,21 @@ endif
 cuda: GCC_CFLAGS += -DCUDA
 cuda: $(OBJECTS) $(CUDA_OBJECTS)
 	$(NVCC) $(CUDA_CFLAGS) $(GCC_LDFLAGS) $(LIBS) ${CUDALIBS} $(OBJECTS) $(CUDA_OBJECTS) -o $(CUDAEXECUTABLE)
+
+ifeq ($(shell uname -s), Darwin)
+cuda-parallel: GCC_CFLAGS=$(LLVM_CFLAGS)
+cuda-parallel: GCC_LDFLAGS=$(LLVM_LDFLAGS)
+cuda-parallel: CUDALIBS=-lcudart -lcusparse -lcurand
+endif
+cuda-parallel: GCC_CFLAGS += -DCUDA
+cuda-parallel: $(OBJECTS) $(MPI_OBJECTS) $(CUDA_OBJECTS)
+	$(NVCC) $(CUDA_CFLAGS) $(GCC_LDFLAGS) $(LIBS) ${CUDALIBS} $(OBJECTS) $(CUDA_OBJECTS) -o $(PCUDAEXECUTABLE)
+							 #$(MPI_OBJECTS)
+	$(MPICC) $(GCC_LDFLAGS) $(LIBS) $(MPI_OBJECTS) -o $(PCUDAEXECUTABLE)
+
+$(MPI_OBJECTS): obj/%_mpi.o: src/%.cpp
+	$(MPICC) -c -o $@ $(GCC_CFLAGS) $(OPTIONS) $<
+
 
 # CUDA debug target
 cuda-debug: CUDA_CFLAGS += -DCUDA_DEBUG -DCUDA_SPIN_DEBUG

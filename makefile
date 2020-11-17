@@ -176,6 +176,7 @@ CLEXECUTABLE=vampire-opencl
 CUDAEXECUTABLE=vampire-cuda
 EXECUTABLE=vampire-serial
 PEXECUTABLE=vampire-parallel
+PCUDAEXECUTABLE=vampire-cuda-parallel
 
 # Set default make target in GNU make > v3.81
 .DEFAULT_GOAL := all
